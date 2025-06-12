@@ -1,0 +1,18 @@
+name: trifle
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - nibabel
+  - scikit-learn
+  - nipype
+  - statsmodels
+  - seaborn 
+  - pip
+  - pip:
+      - -e .  # install your package in editable mode
