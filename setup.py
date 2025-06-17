@@ -2,15 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='trifle',
-    version='0.1',
+    version='0.2',
     packages=find_packages(include=["trifle_module", "trifle_module.*"]),
     include_package_data=True,
-    package_data={
-        'trifle_module': [
-            'templates/Smith20.nii.gz',
-            'templates/Smith70.nii.gz',
-        ],
-    },
     install_requires=[
         'numpy',
         'scipy',
@@ -19,7 +13,7 @@ setup(
         'matplotlib',
         'pandas',
         'nipype'
-    ],  
+    ],
     entry_points={
         'console_scripts': [
             'trifle_run=trifle_module.trifle_main:main',
