@@ -64,7 +64,7 @@ def main():
         spatial_output_dir  = output_dir / "spatial"
         spatial_output_dir.mkdir(exist_ok=True)
         trifle_spatial.run_spatial_ica(
-            input_files     =args.input,
+            input_list_file =args.input,
             output_dir      =str(spatial_output_dir),
             tr              =args.tr,
             n_components    =args.spatial_modelorder,
