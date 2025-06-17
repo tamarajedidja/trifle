@@ -49,7 +49,7 @@ def main():
     parser.add_argument("--output", required=True, help="Directory for outputs.")
     parser.add_argument("--spatial_modelorder", type=int, default=20, help="Model order for spatial ICA.")
     parser.add_argument("--temporal_modelorder", type=int, required=True, help="Model order for temporal ICA.")
-    parser.add_argument("--mask", type=str, required=True, help="Path to brain mask.")
+    parser.add_argument("--mask", type=str, default=None, help="Optional path to brain mask.")  
     parser.add_argument("--seed", type=int, default=42, help="Random seed for temporal ICA reproducibility.")
 
     args                    = parser.parse_args()
