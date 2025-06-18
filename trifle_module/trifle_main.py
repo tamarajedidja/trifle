@@ -15,8 +15,10 @@ import zipfile
 import trifle_module.trifle_spatial as trifle_spatial
 import trifle_module.trifle_temporal as trifle_temporal
 import trifle_module.trifle_timevaryingmixing as trifle_tvM
+from trifle_module.utils import log_memory_usage  
 
 def setup_logging(output_dir):
+    memlog_path = output_dir / "memory_usage.memlog"
     log_path                = output_dir / "trifle_run.log"
 
     if not logging.getLogger().hasHandlers():
@@ -61,6 +63,8 @@ def main():
 
     try:
         # Step 1: Spatial ICA
+        logging.info("=== Step 1: Spatial ICA ===")
+        log_memory_usage("Before Spatial ICA", memlog_path)
         spatial_output_dir  = output_dir / "spatial"
         spatial_output_dir.mkdir(exist_ok=True)
         trifle_spatial.run_spatial_ica(
@@ -71,10 +75,13 @@ def main():
             bet             =False,
             mask            =args.mask
         )
+        log_memory_usage("After Spatial ICA", memlog_path)
         S_path = spatial_output_dir / "melodic_IC.nii.gz"
         T_path = spatial_output_dir / "melodic_mix"
 
         # Step 2: Temporal ICA
+        logging.info("=== Step 2: Temporal ICA ===")
+        log_memory_usage("Before Temporal ICA", memlog_path)
         temporal_output_dir = output_dir / "temporal"
         temporal_output_dir.mkdir(exist_ok=True)
         trifle_temporal.run_temporal_ica(
@@ -83,10 +90,13 @@ def main():
             model_order     =args.temporal_modelorder,
             seed            =args.seed
         )
+        log_memory_usage("After Temporal ICA", memlog_path)
         M_path = temporal_output_dir / f"tica_k{args.temporal_modelorder}" / "M.pkl"
         B_path = temporal_output_dir / f"tica_k{args.temporal_modelorder}" / "B.pkl"
 
         # Step 3: TRIFLE Core Analysis
+        logging.info("=== Step 3: TRIFLE Core Analysis ===")
+        log_memory_usage("Before TRIFLE Core Analysis", memlog_path)
         final_dir           = output_dir / "final"
         final_dir.mkdir(parents=True, exist_ok=True)
         trifle_tvM.run_trifle_analysis(
@@ -98,7 +108,7 @@ def main():
             mask_file       =args.mask,
             output_dir      =final_dir
         )
-
+        log_memory_usage("After TRIFLE Core Analysis", memlog_path)
         logging.info("\nFinal results saved in 'final' subfolder.")
         zip_output(output_dir)
 
