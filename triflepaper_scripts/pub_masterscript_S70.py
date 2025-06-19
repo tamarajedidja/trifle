@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 MASTERSCRIPT FOR THE SMITH 70 PARCELLATION FOR THE FOLLOWING MANUSCRIPT: 
-    "Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): 
-     Estimating time-varying allocation of spatially overlapping sources"
-    by de Kloe et al (soon to be submitted)
+    "de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025). Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging. Imaging Neuroscience."
     
-Created on Tue Jan 9th 2024
-@author: tamdklo
+@author: Tamara Jedidja de Kloe, 2024
+
 """
 
 #%% FUNCTIONS
@@ -53,18 +51,18 @@ import trifle_stats as trifle_stats
 #%% STUDY SPECIFIC PARAMETERS
 ## PARAMETERS
 # --------------------------------------------------------------
-TR              = .206;
-Nt              = 3000;
-Nt_trial        = 60
-timerange       = np.arange(0, TR*Nt, TR)
-framerange      = np.arange(0, Nt, 1)
-timerange_m     = timerange[:Nt_trial]
-ar_lag          = 5
+TR                  = .206;
+Nt                  = 3000;         # total number of timepoints per task run 
+Nt_trial            = 60;           # amount of time points per epoch 
+timerange           = np.arange(0, TR*Nt, TR)
+framerange          = np.arange(0, Nt, 1)
+timerange_m         = timerange[:Nt_trial]
+ar_lag              = 5
 
 ## NAMES 
 # --------------------------------------------------------------
-names_task      = ['Visual', 'Motor']
-names_S70       = ['Intracalcerine (Medial Visual)', 'Lingual (Medial Visual)', 'NWD 1', 'Cerebellum','P. Cingulate', 
+names_task          = ['Visual', 'Motor']
+names_S70           = ['Intracalcerine (Medial Visual)', 'Lingual (Medial Visual)', 'NWD 1', 'Cerebellum','P. Cingulate', 
                    'Precuneus 1', 'Paracingulate 1', 'Thalamus & Putamen', 'Brainstem 1', 'Postcentral gyrus',
                    'L. Occipital (Lateral Visual)', 'NWD 2', 'Auditory', 'Caudate', 'Post. Cingulate & Precuneus', 
                    'A. Cingulate', 'M. Temporal', 'Occipital pole 1 (V2)', 'Paracingulate & FP', 'Insula',
@@ -78,54 +76,66 @@ names_S70       = ['Intracalcerine (Medial Visual)', 'Lingual (Medial Visual)', 
                    'R. Sup. Lat. Occipital', 'L. Sup. Lat. Occipital', 'Frontal pole 2','Sup. Parietal 2','Frontal medial & subcallosal', 
                    'NWD 16', 'Sup. Parietal & SMG', 'Precentral gyrus 3', 'Primary visual 2 (V2)', 'NWD 17', 
                    'NWD 18', 'R. Inf. Temporal gyrus' , 'R. Inf. Temporal gyrus', 'L. Inf. Temporal gyrus', 'R. Middle Temporal gyrus']
-names_tfms    = ['TFM1', 'TFM2', 'TFM3', 'TFM4', 'TFM5', 'TFM6', 'TFM7', 'TFM8', 'TFM9', 'TFM10', 'TFM11', 'TFM12', 'TFM13', 'TFM14', 'TFM15', 'TFM16', 'TFM17', 'TFM18', 'TFM19', 'TFM20', 'TFM21']
-names_subses    = ['03_01', '03_02', '03_03', '04_01', '04_02', '04_03', '05_01', '05_02', '05_03','06_01', '06_02', '06_03', '07_01', '07_02', '07_03', '08_01', '08_02', '08_03','09_01', '09_02', '09_03', '10_01', '10_02', '11_01', '11_02', '11_03','12_01', '12_02', '12_03', '13_01', '13_02', '13_03', '15_01', '15_02','16_01', '16_02', '16_03', '17_01', '17_02', '17_03']
-sessions        = list(names_subses)
-tfms            = list(names_tfms)
+names_tfms          = ['TFM1', 'TFM2', 'TFM3', 'TFM4', 'TFM5', 'TFM6', 'TFM7', 'TFM8', 'TFM9', 'TFM10', 'TFM11', 'TFM12', 'TFM13', 'TFM14', 'TFM15', 'TFM16', 'TFM17', 'TFM18', 'TFM19', 'TFM20', 'TFM21']
+names_subses        = ['03_01', '03_02', '03_03', '04_01', '04_02', '04_03', '05_01', '05_02', '05_03','06_01', '06_02', '06_03', '07_01', '07_02', '07_03', '08_01', '08_02', '08_03','09_01', '09_02', '09_03', '10_01', '10_02', '11_01', '11_02', '11_03','12_01', '12_02', '12_03', '13_01', '13_02', '13_03', '15_01', '15_02','16_01', '16_02', '16_03', '17_01', '17_02', '17_03']
+sessions            = list(names_subses)
+tfms                = list(names_tfms)
 
 ## PLOTTING SPECS
 # --------------------------------------------------------------
-cmap            = sns.diverging_palette(220, 10, as_cmap=True)
+cmap                = sns.diverging_palette(220, 10, as_cmap=True)
 from matplotlib.colors import LinearSegmentedColormap
-cmap_m          = LinearSegmentedColormap.from_list(name='test', colors=['blue','white','orange'])
+cmap_m              = LinearSegmentedColormap.from_list(name='test', colors=['blue','white','orange'])
 
 import matplotlib as mpl
 mpl.rc('font', family='Futura Md BT') 
 mpl.rcParams.update({'font.size': 11})
 
-mycolors = ['#A6381A',"#2A9D8F",'#EFC560', '#EFC560','#3C6A89'] #,'purple','brown','pink']
-colors_4 = ['#A6381A',"#2A9D8F",'#EFC560','#3C6A89'] 
+mycolors            = ['#A6381A',"#2A9D8F",'#EFC560', '#EFC560','#3C6A89'] 
+colors_4            = ['#A6381A',"#2A9D8F",'#EFC560','#3C6A89'] 
 
 ## DIMS
 # ---------------------------------------------------------
 Nd = 70; Nk=21; Nses = 40; Npp = 14
 
-## FILENAMES
+# SET ROOT DIRECTORY (can be passed as a CLI argument or defined here)
 # --------------------------------------------------------------
-experiment_dir = '/project/3013060.04/TK_data/';
-fmridata_dir   = op.join(experiment_dir, 'derivative-menon/melodic')
-stage1_dir     = op.join(experiment_dir, 'dr/')
-Xfilename      = 'filtered_func_data_denoised_norm2_unitvariance.nii.gz'
-Sfilename      = 'dr_stage2_subject00000.nii.gz'
-maskfile_name  = 'mask.nii.gz'
-designs_dir    = op.join(experiment_dir, 'glm/designs')
+import argparse
+
+parser              = argparse.ArgumentParser(description="Run TRIFLE reproducibility script using SMITH70.")
+parser.add_argument('--data_dir', type=str, required=True,
+                    help='Path to root data directory (should contain "dr", "glm", "derivative-menon", etc.)')
+args                = parser.parse_args()
+
+# Root folders
+#experiment_dir      = Path(args.data_root).resolve()
+experiment_dir      = '/project/3013060.04/TK_data/';
+fmridata_dir        = experiment_dir / 'derivative-menon' / 'melodic'
+stage1_dir          = experiment_dir / 'dr'
+designs_dir         = experiment_dir / 'glm' / 'designs'
+
+# Filenames
+Xfilename           = 'filtered_func_data_denoised_norm2_unitvariance.nii.gz'
+Sfilename           = 'dr_stage2_subject00000.nii.gz'
+maskfile_name       = 'mask.nii.gz'
 
 filenames_X = {}; filenames_S = {}; filenames_mask = {}
 filenames_T = {}; filenames_M = {}; filenames_B = {}
-filenames_task = {}; 
+filenames_task = {} 
 
 for sub_ses in sessions:
-    subses_X         = op.join('sub-'+str(sub_ses)+'.ica'); 
-    subses_stage1    = op.join('DR_sub-'+str(sub_ses)+'_s70.dr') 
-    stage2_dir     = op.join(stage1_dir+'TFM_sub-'+str(sub_ses)+'_dr_s70_c21.ica') 
-    subses_task      = op.join(str(sub_ses)+'.txt')
-    filenames_X[sub_ses] = op.join(fmridata_dir, subses_X, Xfilename)
-    filenames_S[sub_ses] = op.join(stage1_dir,subses_stage1, Sfilename)
-    filenames_mask[sub_ses] = op.join(stage1_dir, subses_stage1, maskfile_name)
-    filenames_M[sub_ses] = op.join(op.join(stage2_dir, "melodic_unmix"))
-    filenames_B[sub_ses] = op.join(op.join(stage2_dir, "melodic_mix"))
-    filenames_T[sub_ses] = op.join(stage1_dir, subses_stage1,'dr_stage1_subject00000.txt')
-    filenames_task[sub_ses] = op.join(designs_dir, subses_task)
+    subses_X         = Path(f"sub-{sub_ses}.ica")
+    subses_stage1    = Path(f"DR_sub-{sub_ses}_s70.dr")
+    stage2_dir       = stage1_dir / f"TFM_sub-{sub_ses}_dr_s70_c21.ica"
+    subses_task      = Path(f"{sub_ses}.txt")
+    
+    filenames_X[sub_ses]     = fmridata_dir / subses_X / Xfilename
+    filenames_S[sub_ses]     = stage1_dir / subses_stage1 / Sfilename
+    filenames_mask[sub_ses]  = stage1_dir / subses_stage1 / maskfile_name
+    filenames_M[sub_ses]     = stage2_dir / "melodic_unmix"
+    filenames_B[sub_ses]     = stage2_dir / "melodic_mix"
+    filenames_T[sub_ses]     = stage1_dir / subses_stage1 / "dr_stage1_subject00000.txt"
+    filenames_task[sub_ses]  = designs_dir / subses_task
 
 #%% RUN MAIN (DATALOAD AND TRIFLE LAYER 3)
 ## CREATE DATAFRAMES 

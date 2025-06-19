@@ -35,7 +35,6 @@ def load_taskdesign(filename_task, Nt, DERyesno):
 import os.path as op
 import os
 import sys
-from pathlib import Path
 import numpy as np 
 import seaborn as sns
 import scipy.stats as ss
@@ -44,8 +43,9 @@ import matplotlib.pyplot as plt
 import pickle
 import statsmodels.api as sm
 
-# TRIFLE module 
-sys.path.insert(0, str((Path(__file__).parent / "trifle_module").resolve()))
+# TV-TFM module 
+trifle_module_path = "/home/mrstats/tamdklo/code/trifle_module"     #P1_trifle/trifle_module
+sys.path.append(os.path.abspath(trifle_module_path)) 
 import trifle_main as trifle_main
 import trifle_stats as trifle_stats
 
