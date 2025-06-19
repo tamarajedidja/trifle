@@ -1,4 +1,4 @@
-# TRIFLE: Time-Resolved Instantaneous Functional Loci Estimation  
+# TRIFLE: Time-Resolved Instantaneous Functional Loci Estimation  \\
 *Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*
 
 **Developed at**  
