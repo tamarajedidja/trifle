@@ -16,10 +16,7 @@ This repository contains:
    _Note: This module is under construction. A streamlined CLI version will be released soon._
 
 2. **Scripts used in the TRIFLE paper**:  
-   > de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025).  
-   > *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*.  
-   > Imaging Neuroscience.  
-
+   > de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025). *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*. Imaging Neuroscience.  
    These scripts are located in the `triflepaper_scripts/` folder and reproduce all core figures and analyses from the publication.
 
 ---
