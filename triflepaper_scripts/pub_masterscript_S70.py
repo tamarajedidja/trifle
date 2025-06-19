@@ -45,6 +45,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
 import statsmodels.api as sm
+from pathlib import Path
 
 # Define path relative to current script location
 trifle_module_path = os.path.join(os.path.dirname(__file__), "trifle_module")
@@ -105,7 +106,7 @@ Nd = 70; Nk=21; Nses = 40; Npp = 14
 
 # PATHS
 #experiment_dir      = Path(args.data_root).resolve()
-experiment_dir      = '/project/3013060.04/TK_data/';
+experiment_dir      = Path('/project/3013060.04/TK_data/')
 fmridata_dir        = experiment_dir / 'derivative-menon' / 'melodic'
 stage1_dir          = experiment_dir / 'dr'
 designs_dir         = experiment_dir / 'glm' / 'designs'
