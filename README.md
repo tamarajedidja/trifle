@@ -15,10 +15,15 @@ This repository contains:
 1. **The TRIFLE module** for running the full pipeline on fMRI data.  
    _Note: This module is under construction. A streamlined CLI version will be released soon._
 
-2. **Scripts used in the TRIFLE paper**:  
-   > de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025). *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*. Imaging Neuroscience.  
-   > These scripts are located in the `triflepaper_scripts/` folder and reproduce all core figures and analyses from the publication.
+2. **Scripts used in the TRIFLE paper**  
+   These scripts are located in the `triflepaper_scripts/` folder and reproduce all core figures and analyses from the publication.
 
+   > **Citation**  
+   > de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025).  
+   > *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*.  
+   > *Imaging Neuroscience.*  
+   > DOI: [https://doi.org/10.1162/IMAG.a.58](https://doi.org/10.1162/IMAG.a.58)
+ 
 ---
 ## 🧠 About TRIFLE
 
