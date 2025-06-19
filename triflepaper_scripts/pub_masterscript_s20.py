@@ -97,7 +97,7 @@ Nd = 20; Nk=15; Nses = 40; Npp = 14
 
 # PATHS
 #experiment_dir      = Path(args.data_root).resolve()
-experiment_dir      = '/project/3013060.04/TK_data/';
+experiment_dir      = Path('/project/3013060.04/TK_data/')
 fmridata_dir        = experiment_dir / 'derivative-menon' / 'melodic'
 stage1_dir          = experiment_dir / 'dr'
 designs_dir         = experiment_dir / 'glm' / 'designs'
