@@ -1,0 +1,13 @@
+# Ignore pickled files
+*.pkl
+
+# Ignore neuroimaging files
+*.nii
+*.nii.gz
+
+# Ignore local config or cache
+__pycache__/
+*.pyc
+
+# Ignore the in-progress module folder
+trifle_module/

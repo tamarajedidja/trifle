@@ -1,2 +1,0 @@
-include README.md
-recursive-include trifle_module/templates *.nii.gz
