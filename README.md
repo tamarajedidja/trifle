@@ -8,7 +8,7 @@ Radboud University, Nijmegen, The Netherlands
 **Author:** TJ de Kloe
 
 ---
-## 🧠 Overview
+## 🪜 Overview
 
 This repository contains:
 
