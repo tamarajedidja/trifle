@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 MASTERSCRIPT FOR THE SMITH 20 PARCELLATION FOR THE FOLLOWING MANUSCRIPT: 
-    "Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): 
-     Estimating time-varying allocation of spatially overlapping sources"
-    by de Kloe et al (soon to be submitted)
+    "de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025). Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging. Imaging Neuroscience."
     
 @author: Tamara Jedidja de Kloe, 2024
+
 """
 
 #%% FUNCTIONS
+# --------------------------------------------------------------
 def load_taskdesign(filename_task, Nt, DERyesno):
     # Load task design
     design_full       = np.loadtxt(filename_task)
@@ -32,9 +32,12 @@ def load_taskdesign(filename_task, Nt, DERyesno):
     return task, task_pd
 
 #%% LOAD PACKAGES
+# --------------------------------------------------------------
 import os.path as op
 import os
 import sys
+from pathlib import Path
+import argparse
 import numpy as np 
 import seaborn as sns
 import scipy.stats as ss
@@ -43,15 +46,16 @@ import matplotlib.pyplot as plt
 import pickle
 import statsmodels.api as sm
 
-# TV-TFM module 
-trifle_module_path = "/home/mrstats/tamdklo/code/trifle_module"     #P1_trifle/trifle_module
-sys.path.append(os.path.abspath(trifle_module_path)) 
-import trifle_main as trifle_main
-import trifle_stats as trifle_stats
+# Define path relative to current script location
+trifle_module_path = os.path.join(os.path.dirname(__file__), "trifle_module")
+sys.path.append(os.path.abspath(trifle_module_path))
+import trifle_main
+import trifle_stats
 
-#%% STUDY SPECIFIC PARAMETERS
-## PARAMETERS
+#%% STUDY SPECIFIC 
 # --------------------------------------------------------------
+
+# PARAMETERS
 TR              = .206;
 Nt              = 3000;
 Nt_trial        = 60
@@ -61,7 +65,6 @@ timerange_m     = timerange[:Nt_trial]
 ar_lag          = 5
 
 ## NAMES 
-# --------------------------------------------------------------
 names_task      = ['Visual', 'Motor']
 names_S20       = ['NWD (1)', 'Sensorimotor*','Auditory*','NWD (2)','NWD (3)',
                    'Medial visual (V1)*','DMN*','ECN*', 'Cerebellum*','Lateral visual (V3)*',
@@ -75,7 +78,6 @@ sessions        = list(names_subses)
 tfms            = list(names_tfms)
 
 ## PLOTTING SPECS
-# --------------------------------------------------------------
 cmap            = sns.diverging_palette(220, 10, as_cmap=True)
 from matplotlib.colors import LinearSegmentedColormap
 cmap_m          = LinearSegmentedColormap.from_list(name='test', colors=['blue','white','orange'])
@@ -85,53 +87,50 @@ mpl.rc('font', family='Futura Md BT')
 mpl.rcParams.update({'font.size': 11})
 
 mycolors = ['#A6381A','#2A9D8F', '#EFC560','#3C6A89'] 
+colors_4 = ['#A6381A','#2A9D8F', '#EFC560','#3C6A89'] 
 
 ## DIMS
-# ---------------------------------------------------------
 Nd = 20; Nk=15; Nses = 40; Npp = 14
 
-## FILENAMES
-# --------------------------------------------------------------
-experiment_dir = '/project/3013060.04/TK_data/';
-fmridata_dir   = op.join(experiment_dir, 'derivative-menon/melodic')
-stage1_dir     = op.join(experiment_dir, 'dr/')
-Xfilename      = 'filtered_func_data_denoised_norm2_unitvariance.nii.gz'
-Sfilename      = 'dr_stage2_subject00000.nii.gz'
-maskfile_name  = 'mask.nii.gz'
-designs_dir    = op.join(experiment_dir, 'glm/designs')
+# ROOT FOLDER PARSER
+#TODO 
+
+# PATHS
+#experiment_dir      = Path(args.data_root).resolve()
+experiment_dir      = '/project/3013060.04/TK_data/';
+fmridata_dir        = experiment_dir / 'derivative-menon' / 'melodic'
+stage1_dir          = experiment_dir / 'dr'
+designs_dir         = experiment_dir / 'glm' / 'designs'
+
+# Filenames
+Xfilename           = 'filtered_func_data_denoised_norm2_unitvariance.nii.gz'
+Sfilename           = 'dr_stage2_subject00000.nii.gz'
+maskfile_name       = 'mask.nii.gz'
 
 filenames_X = {}; filenames_S = {}; filenames_mask = {}
 filenames_T = {}; filenames_M = {}; filenames_B = {}
-filenames_task = {}; 
+filenames_task = {} 
 
 for sub_ses in sessions:
-    subses_X         = op.join('sub-'+str(sub_ses)+'.ica'); 
-    subses_stage1    = op.join('DR_sub-'+str(sub_ses)+'_s20.dr') 
-    stage2_dir     = op.join(stage1_dir+'TFM_sub-'+str(sub_ses)+'_dr_s20_c15.ica') 
-    subses_task      = op.join(str(sub_ses)+'.txt')
-    filenames_X[sub_ses] = op.join(fmridata_dir, subses_X, Xfilename)
-    filenames_S[sub_ses] = op.join(stage1_dir,subses_stage1, Sfilename)
-    filenames_mask[sub_ses] = op.join(stage1_dir, subses_stage1, maskfile_name)
-    filenames_M[sub_ses] = op.join(op.join(stage2_dir, "melodic_unmix")) #names as given by dangom: unmix core mixing matrix
-    filenames_B[sub_ses] = op.join(op.join(stage2_dir, "melodic_mix")) #names as given by dangom: mix tfm time series 
-    filenames_T[sub_ses] = op.join(stage1_dir, subses_stage1,'dr_stage1_subject00000.txt')
-    filenames_task[sub_ses] = op.join(designs_dir, subses_task)
-
-
-#%% IMPORT TASK DESIGNS--------------------------
-X_orig = {}; X_orig_shape = {}
-task_dict = {}; task_pd_dict = {}
+    subses_X         = Path(f"sub-{sub_ses}.ica")
+    subses_stage1    = Path(f"DR_sub-{sub_ses}_s20.dr")
+    stage2_dir       = stage1_dir / f"TFM_sub-{sub_ses}_dr_s20_c15.ica"
+    subses_task      = Path(f"{sub_ses}.txt")
+    
+    filenames_X[sub_ses]     = fmridata_dir / subses_X / Xfilename
+    filenames_S[sub_ses]     = stage1_dir / subses_stage1 / Sfilename
+    filenames_mask[sub_ses]  = stage1_dir / subses_stage1 / maskfile_name
+    filenames_M[sub_ses]     = stage2_dir / "melodic_unmix"
+    filenames_B[sub_ses]     = stage2_dir / "melodic_mix"
+    filenames_T[sub_ses]     = stage1_dir / subses_stage1 / "dr_stage1_subject00000.txt"
+    filenames_task[sub_ses]  = designs_dir / subses_task
 
 ## IMPORT TASK DESIGNS
 # ---------------------------------------------------------
+X_orig = {}; X_orig_shape = {}
+task_dict = {}; task_pd_dict = {}
 for ses in sessions:
     task_dict[ses], task_pd_dict[ses] = load_taskdesign(filenames_task[ses], Nt, 'no')
-
-#with open('/project/3013060.04/TK_data/results_S20/task_dict.pickle', 'wb') as handle:
-#    pickle.dump(task_dict, handle)
-#with open('/project/3013060.04/TK_data/results_S20/task_pd_dict.pickle', 'wb') as handle:
-#    pickle.dump(task_pd_dict, handle)
-
 
 #%% RUN MAIN (DATALOAD AND TRIFLE LAYER 3)
 ## CREATE DATAFRAMES 
@@ -148,78 +147,57 @@ f_dict  = {}
 for ses in sessions:
     X_dict[ses], S_dict[ses], Tz_dict[ses], M_dict[ses], Bz_dict[ses], Xr_dict[ses], Mt_dict[ses], f_dict[ses] = trifle_main.main(filenames_X[ses], filenames_S[ses], filenames_mask[ses], filenames_T[ses], filenames_M[ses], filenames_B[ses])
 
-#  SAVE AS PICKLES
-# ---------------------------------------------------------
-#with open('/project/3013060.04/TK_data/results_S20/X_dict.pickle', 'wb') as handle:
-#    pickle.dump(X_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/S_dictpickle', 'wb') as handle:
-    pickle.dump(S_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/Tz_dict.pickle', 'wb') as handle:
-    pickle.dump(Tz_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/M_dict.pickle', 'wb') as handle:
-    pickle.dump(M_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/Bz_dict.pickle', 'wb') as handle:
-    pickle.dump(Bz_dict, handle)
-#with open('/project/3013060.04/TK_data/results_S20/Xr_dict.pickle', 'wb') as handle:
-#    pickle.dump(Xr_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/Mt_dict.pickle', 'wb') as handle:
-    pickle.dump(Mt_dict, handle)
-with open('/project/3013060.04/TK_data/results_S20/f_dict.pickle', 'wb') as handle:
-    pickle.dump(f_dict, handle)
-
 #%%#%% IMPORT PREVIOUSLY CREATED DATAFRAMES
 # ---------------------------------------------------------
-#X_dict       = pickle.load(open('/project/3013060.04/TK_data/results_S20/X_dict.pickle',"rb")); 
-S_dict       = pickle.load(open('/project/3013060.04/TK_data/results_S20/S_dict.pickle',"rb")); 
-Tz_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/Tz_dict.pickle',"rb")); 
-M_dict       = pickle.load(open('/project/3013060.04/TK_data/results_S20/M_dict.pickle',"rb")); 
-Bz_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/Bz_dict.pickle',"rb")); 
-#Xr_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/Xr_dict.pickle',"rb")); 
-Mt_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/Mt_dict.pickle',"rb")); 
-f_dict       = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_dict.pickle',"rb")); 
-#task_dict    = pickle.load(open('/project/3013060.04/TK_data/results_S20/task_dict.pickle',"rb")); 
-#task_pd_dict = pickle.load(open('/project/3013060.04/TK_data/results_S20/task_pd_dict.pickle',"rb")); 
+#TODO: remove import
+#X_dict         = pickle.load(open('/project/3013060.04/TK_data/results_S20/X_dict.pickle',"rb")); 
+S_dict          = pickle.load(open('/project/3013060.04/TK_data/results_S20/S_dict.pickle',"rb")); 
+Tz_dict         = pickle.load(open('/project/3013060.04/TK_data/results_S20/Tz_dict.pickle',"rb")); 
+M_dict          = pickle.load(open('/project/3013060.04/TK_data/results_S20/M_dict.pickle',"rb")); 
+Bz_dict         = pickle.load(open('/project/3013060.04/TK_data/results_S20/Bz_dict.pickle',"rb")); 
+#Xr_dict        = pickle.load(open('/project/3013060.04/TK_data/results_S20/Xr_dict.pickle',"rb")); 
+Mt_dict         = pickle.load(open('/project/3013060.04/TK_data/results_S20/Mt_dict.pickle',"rb")); 
+f_dict          = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_dict.pickle',"rb")); 
+#task_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/task_dict.pickle',"rb")); 
+#task_pd_dict   = pickle.load(open('/project/3013060.04/TK_data/results_S20/task_pd_dict.pickle',"rb")); 
 
 #%% PLOT TFM SPATIAL MAPS (SM II)
 ##  Figure 3: Static M 
-names_S20_new    = ['NWD (1)', 'Sensorimotor*','Auditory*','NWD (2)','NWD (3)','Medial visual*','DMN*','ECN*', 'Cerebellum*','Lateral visual*','NWD (4)', 'FP (Left)*' , 'FP (Right)*', 'NWD (5)', 'NWD (6)', 'Primary visual*','NWD (7)','NWD (8)', 'NWD (9)', 'NWD (10)']
-ses = '11_03'
-M_3_pd  = pd.DataFrame(M_dict[ses][:,2], columns= ['Task-Positive Mode'], index=names_S20_new) 
-M_7_pd  = pd.DataFrame(M_dict[ses][:,6], columns= ['Default Temporal Mode'], index=names_S20_new) 
-index_nets = ['Primary visual*','Lateral visual*','Medial visual*','Sensorimotor*','Cerebellum*','Auditory*', 'ECN*','FP (Left)*' , 'FP (Right)*','DMN*','NWD (1)','NWD (2)','NWD (3)','NWD (4)', 'NWD (5)','NWD (6)','NWD (7)', 'NWD (8)', 'NWD (9)', 'NWD (10)']
-M_3_pd_re = M_3_pd.reindex(index_nets); M_psm = M_3_pd_re.iloc[:10,:]
-M_7_pd_re = M_7_pd.reindex(index_nets); M_dtm = M_7_pd_re.iloc[:10,:]
+names_S20_new   = ['NWD (1)', 'Sensorimotor*','Auditory*','NWD (2)','NWD (3)','Medial visual*','DMN*','ECN*', 'Cerebellum*','Lateral visual*','NWD (4)', 'FP (Left)*' , 'FP (Right)*', 'NWD (5)', 'NWD (6)', 'Primary visual*','NWD (7)','NWD (8)', 'NWD (9)', 'NWD (10)']
+ses             = '11_03'
+M_3_pd          = pd.DataFrame(M_dict[ses][:,2], columns= ['Task-Positive Mode'], index=names_S20_new) 
+M_7_pd          = pd.DataFrame(M_dict[ses][:,6], columns= ['Default Temporal Mode'], index=names_S20_new) 
+index_nets      = ['Primary visual*','Lateral visual*','Medial visual*','Sensorimotor*','Cerebellum*','Auditory*', 'ECN*','FP (Left)*' , 'FP (Right)*','DMN*','NWD (1)','NWD (2)','NWD (3)','NWD (4)', 'NWD (5)','NWD (6)','NWD (7)', 'NWD (8)', 'NWD (9)', 'NWD (10)']
+M_3_pd_re       = M_3_pd.reindex(index_nets); M_psm = M_3_pd_re.iloc[:10,:]
+M_7_pd_re       = M_7_pd.reindex(index_nets); M_dtm = M_7_pd_re.iloc[:10,:]
 
 ## TPM
 plt.figure(figsize=(5.2, 4.2))
-sns.heatmap(M_psm, cmap = cmap_m , vmin=-2, vmax=2) #"PuOr_r"
+sns.heatmap(M_psm, cmap = cmap_m , vmin=-2, vmax=2) 
 plt.title("Mixing Matrix (M) Column", font = 'Futura Hv BT', fontweight="bold", fontsize=12)
 plt.ylabel("Smith 20 Network")
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/M_tpm.png', bbox_inches="tight", dpi=700)
 plt.show()
 
 ## DTM
 plt.figure(figsize=(5.2, 4.2))
-sns.heatmap(M_dtm, cmap = cmap_m , vmin=-2, vmax=2) #"PuOr_r"
+sns.heatmap(M_dtm, cmap = cmap_m , vmin=-2, vmax=2)
 plt.title("Mixing Matrix (M) Column", font = 'Futura Hv BT', fontweight="bold", fontsize=12)
 plt.ylabel("Smith 20 Network")
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/M_dtm.png', bbox_inches="tight", dpi=700)
 plt.show()
 
 ## Smith 10 DTM
 M_10_name = '/project/3013060.04/TK_data/dr/TFM_sub-11_03_dr_s10_c10.ica/melodic_unmix'
-M_10 = np.loadtxt(M_10_name) # TFM core mixing matrix
+M_10 = np.loadtxt(M_10_name) 
 M_10_pd  = pd.DataFrame(M_10[:,0], columns= ['Default Temporal Mode'], index=names_S10) 
 
 plt.figure(figsize=(5.2, 4.2))
-sns.heatmap(M_10_pd, cmap = cmap_m , vmin=-1.5, vmax=1.5) #"PuOr_r"
+sns.heatmap(M_10_pd, cmap = cmap_m , vmin=-1.5, vmax=1.5) 
 plt.title("Mixing Matrix (M) Column", font = 'Futura Hv BT', fontweight="bold", fontsize=12)
 plt.ylabel("Smith 10 Network")
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/M_dtm_S10.png', bbox_inches="tight", dpi=700)
-#plt.show()
+plt.show()
 
 #%% FIND TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
 # ---------------------------------------------------------
@@ -244,13 +222,6 @@ for ses_idx, ses in enumerate(sessions):
     maxcor_idx[ses] = np.int(maxcor_tfm[ses][3:])-1
     maxcor_value[ses] = Bz_fisher_dict[ses].loc['Visual', maxcor_tfm[ses]]
     del ses_idx, ses
-
-#with open('/project/3013060.04/TK_data/results_S20/maxcor_tfm.pickle', 'wb') as handle:
-#    pickle.dump(maxcor_tfm, handle)
-#with open('/project/3013060.04/TK_data/results_S20/maxcor_value.pickle', 'wb') as handle:
-#    pickle.dump(maxcor_value, handle)
-#with open('/project/3013060.04/TK_data/results_S20/maxcor_idx.pickle', 'wb') as handle:
-#    pickle.dump(maxcor_idx, handle)
     
 #%% OPEN PREVIOUSLY SAVED DATA: TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
 # ---------------------------------------------------------
@@ -275,25 +246,18 @@ for ses in sessions:
     static_M = M[:,tfm_num]
     
     ## REVERT TIMESERIES IF NEEDED 
-    # --------------------------------------------------
     maxcor = maxcor_value[ses]
     if maxcor < 0:
         f = - f
         static_M = - static_M
     
     ## SUBTRACT M
-    # --------------------------------------------------
     step1 = np.squeeze(np.dstack([static_M]*N_t))
     f_minM = np.add(f,-step1)
     
     f_tpm_dict[ses] = f_minM
     M_rev[ses] = static_M
     del tfm_txt, tfm_num, f, N_t, M_filename, M, static_M, maxcor, step1, f_minM
-
-#with open('/project/3013060.04/TK_data/results_S20/f_tpm_dict.pickle', 'wb') as handle:
-#    pickle.dump(f_tpm_dict, handle)
-#with open('/project/3013060.04/TK_data/results_S20/M_rev_dict.pickle', 'wb') as handle:
-#    pickle.dump(M_rev, handle)
     
 #%% OPEN PREVIOUSLY SAVED DATA: f_tpm_dict
 # ---------------------------------------------------------
@@ -301,6 +265,7 @@ f_tpm_dict     = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_tpm
 M_rev          = pickle.load(open('/project/3013060.04/TK_data/results_S20/M_rev_dict.pickle',"rb")); 
 
 #%% INTO EPOCHS 
+# ---------------------------------------------------------
 f_epochs_dict              = {}
 regressors_epochs_dict     = {}
 Ndel_dict                  = {}
@@ -312,15 +277,6 @@ for sub_ses in sessions:
     tfm_num                 = maxcor_idx[sub_ses];
     
     f_epochs_dict[sub_ses], regressors_epochs_dict[sub_ses], Ndel_dict[sub_ses] = trifle_stats.into_trials(onsets, regressors, TR, Nt_trial, Nt, f_tpm_dict[sub_ses])
-
-#with open('/project/3013060.04/TK_data/results_S20/f_epochs_dict.pickle', 'wb') as handle:
-#    pickle.dump(f_epochs_dict, handle)
-    
-#with open('/project/3013060.04/TK_data/results_S20/regressors_epochs_dict.pickle', 'wb') as handle:
-#    pickle.dump(regressors_epochs_dict, handle)
-
-#with open('/project/3013060.04/TK_data/results_S20/Ndel_dict.pickle', 'wb') as handle:
-#    pickle.dump(Ndel_dict, handle)
 
 #%% OPEN PREVIOUSLY SAVED DATA: 
 # ---------------------------------------------------------
@@ -337,15 +293,6 @@ for sub_ses in sessions:
     f_sem_dict[sub_ses]     = np.std(f_epochs_dict[sub_ses],axis=1)/np.sqrt(f_epochs_dict[sub_ses].shape[1])
     regs_average_dict[sub_ses] = np.mean(regressors_epochs_dict[sub_ses],axis=1) 
 
-#with open('/project/3013060.04/TK_data/results_S20/f_average_dict.pickle', 'wb') as handle:
-#    pickle.dump(f_average_dict, handle)
-    
-#with open('/project/3013060.04/TK_data/results_S20/f_sem_dict.pickle', 'wb') as handle:
-#    pickle.dump(f_sem_dict, handle)
-
-#with open('/project/3013060.04/TK_data/results_S20/regs_average_dict.pickle', 'wb') as handle:
-#    pickle.dump(regs_average_dict, handle)
-
 #%% OPEN PREVIOUSLY SAVED DATA: 
 # ---------------------------------------------------------
 f_average_dict     = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_average_dict.pickle',"rb")); 
@@ -354,7 +301,7 @@ regs_average_dict  = pickle.load(open('/project/3013060.04/TK_data/results_S20/r
 
 #%% Figure 3: RANKING PLOTS
 # ---------------------------------------------------------
-### Single trial
+
 f_minM_dict             = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_minM_dict_whole.pickle',"rb")); 
 sub_ses                 = '11_03'
 behavior                = np.loadtxt(op.join('/project/3013060.04/TK_data/behavioral/Behavioral_sub_'+str(sub_ses[:2])+'_ses_'+str(sub_ses[3:])+'.txt'), delimiter="\t", skiprows=1)
@@ -362,7 +309,7 @@ onsets                  = behavior[:,0].T
 onset_frame             = np.round((onsets[0]/TR),0) ; print(onset_frame)
 task                    = task_dict[sub_ses]
 
-## Single trial ranks ---------------------------------------------------------
+### Single trial ranks ---------------------------------------------------------
 f_tfm3                  = f_minM_dict[sub_ses]
 f_tfm3_pd               = pd.DataFrame(f_tfm3, index= names_S20)   ## CHOOSE: -M OR NOT 
 
@@ -412,8 +359,6 @@ for t_idx, t in enumerate(range(21,81)):
 
         elif I_highest_rank[t] == 8: #frontoparietal right
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-#    else:
-#        plt.scatter(framerange[t], task_11_03[t,0], c='black', s=1)
 plt.plot(timerange[:60],task[21:81,0], '--k', linewidth=0.5)
 plt.yticks([])
 # SET THE LINES PER NETWORK PLOT 
@@ -462,23 +407,21 @@ plt.xlabel('Time ($s$)', fontsize=12)
 #plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/ranks_singletrial.png', dpi=700, bbox_inches = "tight")
 plt.show()
 
-#%%
-## Across trials ranking plot ---------------------------------------------------------
+#%% Across trials ranking plot ---------------------------------------------------------
 names_S20_s10            = ['Sensorimotor','Auditory','Visual 1','DMN','ECN', 'Cerebellum', 'Visual 3', 'FP Attention (Left)' , 'FP Attention (Right)', 'Visual 2']
 regressors_epochs_dict   = pickle.load(open('/project/3013060.04/TK_data/results_S20/regressors_epochs_dict.pickle',"rb"))
 regs_epochs_ss           = regressors_epochs_dict['11_03']
 regs_average_ss          = np.mean(regs_epochs_ss, axis=1)
 
-ses = '11_03'
-f_ta_10 = np.zeros([10,60])
-smith10 = [1,2,5,6,7,8,9,11,12,15] #SM, AU, V1, DMN, ECN, CER, V3, FP left, FP right, Vis 2
-f_average_ss     = f_average_dict[ses]
+ses                     = '11_03'
+f_ta_10                 = np.zeros([10,60])
+smith10                 = [1,2,5,6,7,8,9,11,12,15] #SM, AU, V1, DMN, ECN, CER, V3, FP left, FP right, Vis 2
+f_average_ss            = f_average_dict[ses]
 for i in range(10):
     sel = smith10[i]
     f_ta_10[i,:] = f_average_ss[sel,:]
     del sel;
     
-#f_tfm3_10_z = ss.zscore(f_tfm3_10, axis=1)
 f_ta_10    = pd.DataFrame(f_ta_10, index=names_S20_s10)
 f_ta_ranks = f_ta_10.rank(axis=0, ascending=True); 
 
@@ -518,8 +461,7 @@ for t in range(N_t):
 
     elif I_highest_rank[t] == 8:
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-#    else:
-#        plt.scatter(framerange[t], task_11_03[t,0], c='black', s=1)
+
 plt.plot(timerange_m,task[:,0], '--k', linewidth=0.5)
 plt.yticks([])
 # SET THE LINES PER NETWORK PLOT 
@@ -529,13 +471,9 @@ y1 = l[2]*np.ones([N_t])
 y2 = l[3]*np.ones([N_t])
 y3 = l[4]*np.ones([N_t])
 y4 = l[5]*np.ones([N_t])
-#y5 = l[5]*np.ones([N_t])
-#y6 = l[6]*np.ones([N_t])
-#(-0.5, 1)
 
 plt.subplot(2,1,2)
 for t in range(N_t):
-#    if  np.isfinite(I_highest_rank[t]):
     if I_highest_rank[t] == 3: #DMN
         plt.scatter(timerange[t],y1[t], color= network_colors[I_highest_rank[t].astype(int)], s=15)
 
@@ -565,7 +503,6 @@ ax.yaxis.set_ticks(l)
 ax.set_yticklabels(network_lines, fontsize=11)
 plt.ylim([0, 6])
 plt.xlabel('Time ($s$)', fontsize=12)
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/ranks_trialaveraged.png', dpi=700, bbox_inches = "tight")
 plt.show()
 
 #%% Group ranking plot: most common highest ranking network on sessions averages 
@@ -631,8 +568,6 @@ for t in range(N_t):
 
     elif I_highest_rank[t] == 8:
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-#    else:
-#        plt.scatter(framerange[t], task_11_03[t,0], c='black', s=1)
 plt.plot(timerange_m,task[:,0], '--k', linewidth=0.5)
 plt.yticks([])
 
@@ -643,9 +578,6 @@ y1 = l[2]*np.ones([N_t])
 y2 = l[3]*np.ones([N_t])
 y3 = l[4]*np.ones([N_t])
 y4 = l[5]*np.ones([N_t])
-#y5 = l[5]*np.ones([N_t])
-#y6 = l[6]*np.ones([N_t])
-#(-0.5, 1)
 
 plt.subplot(2,1,2)
 for t in range(N_t):
@@ -679,8 +611,6 @@ ax.yaxis.set_ticks(l)
 ax.set_yticklabels(network_lines, fontsize=11)
 plt.ylim([0, 6])
 plt.xlabel('Time ($s$)', fontsize=12)
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/ranks_groupaveraged.png', dpi=700, bbox_inches = "tight")
-
 
 #%% CORRELATIONS ENTRIES OF F TO THE TASK
 f_taskcor_dict = {}; f_taskcor_pvals_dict = {}
@@ -707,18 +637,6 @@ for ses_idx, ses in enumerate(sessions):
 f_taskcor_mean = pd.DataFrame(np.mean(f_taskcor_pNet, axis=2), index=names_task, columns=names_S20)
 f_taskcor_mean_sort = f_taskcor_mean.sort_values('Visual',axis=1, ascending=False)
 
-#with open('/project/3013060.04/TK_data/results_S20/f_taskcorF_dict.pickle', 'wb') as handle:
-#    pickle.dump(f_taskcorF_dict, handle)  
-    
-#with open('/project/3013060.04/TK_data/results_S20/f_taskcor_pNet.pickle', 'wb') as handle:
-#    pickle.dump(f_taskcor_pNet, handle)
-
-#with open('/project/3013060.04/TK_data/results_S20/f_taskcor_mean.pickle', 'wb') as handle:
-#    pickle.dump(f_taskcor_mean, handle)
-    
-#with open('/project/3013060.04/TK_data/results_S20/f_taskcor_mean_sort.pickle', 'wb') as handle:
-#    pickle.dump(f_taskcor_mean_sort, handle)
-
 #%% OPEN PREVIOUSLY SAVED DATA: 
 # ---------------------------------------------------------
 f_taskcorF_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_taskcorF_dict.pickle',"rb")); 
@@ -728,11 +646,9 @@ f_taskcor_mean_sort  = pickle.load(open('/project/3013060.04/TK_data/results_S20
 
 #%% FIGURE 4a: single-subject trial averaged SMITH20
 # --------------------------------------------------------
-colors_4 = ['#A6381A','#2A9D8F', '#EFC560','#3C6A89'] 
 sub_ses = '11_03'
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Single Session: Trial-Averaged Network Weights (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
-#plt.step(timerange_m, bc, where='post', label='Visual Stimulus', color='black', linewidth=0.8)
 plt.errorbar(timerange_m, f_average_dict[sub_ses][15,:], f_sem_dict[sub_ses][15,:],color=colors_4[0], linewidth=1, label='Primary Visual') 
 plt.errorbar(timerange_m, f_average_dict[sub_ses][1,:],f_sem_dict[sub_ses][1,:],color=colors_4[1]  , linewidth=1, label='Sensorimotor')  
 plt.errorbar(timerange_m, f_average_dict[sub_ses][2,:],f_sem_dict[sub_ses][2,:],color=colors_4[2], linewidth=1, label='Auditory') 
@@ -740,12 +656,10 @@ plt.errorbar(timerange_m, f_average_dict[sub_ses][6,:],f_sem_dict[sub_ses][6,:],
 plt.xlabel('Time ($s$)', fontsize=11)
 plt.ylabel('Amplitude', fontsize=11)
 plt.legend(fontsize=11, frameon=False)
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/TA_Singlesubject_SMITH20.png', dpi=700)
 
 #%% Trial averaged For all pp's
 # -------------------------------------------------------------------------------------
 fig, ax = plt.subplots(14,3, figsize=(9.2,22),sharex='col', sharey='row')
-#fig.suptitle('The Average Weights per Network for the Strongest Correlating TFM Component', fontweight="bold")
 pltcount= 1
 fig.add_axes=([0.1, 0.1, 0.6, 0.75])
 for ses_idx, ses in enumerate(sessions):
@@ -757,15 +671,10 @@ for ses_idx, ses in enumerate(sessions):
     for net in [15,1, 2,6]: 
         color_idx=color_idx+1
         ax.errorbar(timerange_m, f_average_dict[ses][net,:], f_sem_dict[ses][net,:],color=mycolors[color_idx], linewidth=0.8, label=names_S20[net])
-        
-    #ax.step(timerange_m, bc, where='post', label='Visual Stimulus', color='black', linewidth=0.8)
-#    ax.plot(timerange_m, np.mean(regressors_epochs_dict[ses][0,:,:], axis=0) ,'k', linewidth=0.5)
-    #ax.plot(timerange_m, taskaverage_dict['motor_'+ses],'k--', linewidth=0.5)
     ax.tick_params(axis='both', which='minor', labelsize=6)
     plt.grid(False)
     fig.tight_layout(pad=3.0)
-    #plt.axis([0,12.4,-2,3.5])
-    
+
     if ses == '10_02':  #'10_02':
         pltcount = pltcount +2
     elif ses == '15_02':  #'15_02':
@@ -778,7 +687,6 @@ fig.supylabel('Amplitude', fontsize=16)
 handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.3,0.95), fontsize=16, frameon=False)
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/TA_Allpps.png', dpi=700, bbox_inches='tight')
 
 #%% GROUP-LEVEL Z-VALUE SMITH20
 # ---------------------------------------------------------
@@ -815,7 +723,6 @@ for net_idx, net in enumerate(networks_stats):
 #%% Figure 5b: Group level statistics for trial-averaged f
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level Statistics: Network Involvement (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
-#plt.step(timerange_m, bc, where='post', label='Visual Stimulus', color='black', linewidth=0.8)
 p1 =plt.plot(timerange_m, grouplevel_zvals[names_S20[15]], colors_4[0], linewidth=1)
 p2 =plt.plot(timerange_m, grouplevel_zvals[names_S20[1]], colors_4[1] , linewidth=1)
 p3= plt.plot(timerange_m, grouplevel_zvals[names_S20[2]], colors_4[2] , linewidth=1)
@@ -823,22 +730,21 @@ p4= plt.plot(timerange_m, grouplevel_zvals[names_S20[6]], colors_4[3] , linewidt
 plt.xlabel('Time ($s$)', size=11)
 plt.ylabel('$Z$-value', size=11)
 plt.ylim([-2,6.5])
-plt.legend(['Primary Visual','Sensorimotor', 'Auditory','DMN'], frameon=False, fontsize=11) #loc='upper left',bbox_to_anchor=(1,1), 
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/TA_Grouplevel_SMITH20.png', dpi=700)
+plt.legend(['Primary Visual','Sensorimotor', 'Auditory','DMN'], frameon=False, fontsize=11) 
 
 #%% CREATE DATAFRAME FOR FLOBS GLMS
 # ---------------------------------------------------------
 ## PP ID [| SES ID] | TRIAL | Timepoint | BF1 | BF2 | BF3 | BF4 | BF5 | BF6 | f_nw1 .... f_nw20 | 
-pps       = ['PP3', 'PP4', 'PP5', 'PP6', 'PP7', 'PP8','PP9', 'PP10', 'PP11','PP12', 'PP13', 'PP15','PP16', 'PP17']
-pps_pub = ['PP1', 'PP2', 'PP3', 'PP4', 'PP5', 'PP6','PP7', 'PP8', 'PP9','PP10', 'PP11', 'PP12','PP13', 'PP14']
-N_pp      = 14
+pps             = ['PP3', 'PP4', 'PP5', 'PP6', 'PP7', 'PP8','PP9', 'PP10', 'PP11','PP12', 'PP13', 'PP15','PP16', 'PP17']
+pps_pub         = ['PP1', 'PP2', 'PP3', 'PP4', 'PP5', 'PP6','PP7', 'PP8', 'PP9','PP10', 'PP11', 'PP12','PP13', 'PP14']
+N_pp            = 14
 
 #Create pp_id, tp_id and session var
-pp_id = []; tp_id = []; ses_id = [];
-start = 0; ntp_ses = 3000
+pp_id           = []; tp_id = []; ses_id = [];
+start           = 0; ntp_ses = 3000
 for I_pp, pp in enumerate(pps):
     if pp == 'PP10' or pp == 'PP15':
-        n1 = 6000
+        n1      = 6000
         pp_id.extend(n1*[pp])
         tp_id.extend(np.arange(n1))
         ses_id.extend(ntp_ses*['ses_1'])
@@ -893,11 +799,8 @@ for sub_ses in sessions:
 succes_reg = pd.DataFrame(succes_reg, columns=["Succes"])
 print(succes_reg)
 
-#%%
 from patsy import dmatrices
-# Create pandas dataframe 
 df = pd.DataFrame({'PP':pp_id, 'Session':ses_id, 'Timepoint':tp_id, 'Succes':succes_reg["Succes"], 'Visual:HRF':subses_bfs[:,0],'Visual:Shift':subses_bfs[:,1], 'Visual:Dispersion':subses_bfs[:,2],'Visual:4':subses_bfs[:,3],'Visual:5':subses_bfs[:,4], 'Visual:6':subses_bfs[:,5],'f_NWD1':subses_fs[:,0], 'f_Sensorimotor':subses_fs[:,1],  'f_Auditory':subses_fs[:,2], 'f_NWD2':subses_fs[:,3], 'f_NWD3':subses_fs[:,4], 'f_MedialVisual_V1':subses_fs[:,5], 'f_DMN':subses_fs[:,6], 'f_ECN':subses_fs[:,7], 'f_Cerebellum':subses_fs[:,8], 'f_LateralVisual_V3':subses_fs[:,9], 'f_NWD_IFGAmyg':subses_fs[:,10], 'f_FPleft':subses_fs[:,11], 'f_FPright':subses_fs[:,12], 'f_NWD4':subses_fs[:,13], 'f_NWD_Insula':subses_fs[:,14], 'f_PrimaryVisual_V2':subses_fs[:,15], 'f_NWD_Hipp':subses_fs[:,16], 'f_NWD5':subses_fs[:,17], 'f_NWD6':subses_fs[:,18], 'f_NWD7':subses_fs[:,19]})
-
 from sklearn import preprocessing
 scaler = preprocessing.StandardScaler()
 df['VisualHRF_z'] = scaler.fit_transform(df[["Visual:HRF"]])
@@ -910,7 +813,8 @@ df['Visual6_z'] = scaler.fit_transform(df[["Visual:6"]])
 df_mem = df[["PP", "Session", "Timepoint", "f_Sensorimotor", "f_Auditory", "f_MedialVisual_V1", "f_DMN", "f_ECN", "f_Cerebellum", "f_LateralVisual_V3", 'f_FPleft', 'f_FPright', "f_PrimaryVisual_V2", 'f_NWD_Hipp', "VisualHRF_z", "VisualShift_z", "VisualDisp_z","Visual4_z", "Visual5_z", "Visual6_z"]]
 df_lm = pd.concat((df_mem, pd.get_dummies(succes_reg, drop_first=True)), axis=1)
 
-#%%
+#%% EPOCH BFS FOR PLOTTING 
+# ---------------------------------------------------------
 bfs_visual_dict  = {}
 for sub_ses in sessions:
     bfs_vis_orig   = np.loadtxt('/project/3013060.04/TK_data/flobs/IV_basisfunctions/final_6bfs/design_flobs_'+str(sub_ses)+'.txt')
@@ -934,41 +838,13 @@ for sub_ses in sessions:
     bfs_visual_dict[sub_ses] = bfs_cut
     del bfs_cut
 
-#%%
 bfs_visual_all = np.zeros([40,60,6]); 
 for ses_idx, sub_ses in enumerate(sessions):
     print(sub_ses+' check')
     for bf_idx in range(6):
         bfs_visual_all[ses_idx,:,bf_idx] = np.nanmean(bfs_visual_dict[sub_ses][:,:,bf_idx], axis=0)
-        
-# Initialize the array as zeros
-bfs_visual_all = np.zeros([40, 60, 6])
 
-# Iterate over sessions
-for ses_idx, sub_ses in enumerate(sessions):
-    print(sub_ses + ' check')
-    
-    # Iterate over the 6 "bf" indices
-    for bf_idx in range(6):
-        # Extract the data slice for the current session and bf index
-        data_slice = bfs_visual_dict[sub_ses][:, :, bf_idx]
-        
-        # Check the shape of the slice
-        print(f"Shape of data_slice for {sub_ses} and bf_idx {bf_idx}: {data_slice.shape}")
-        
-        # Check if the slice contains any elements
-        if data_slice.size == 0:
-            print(f"Warning: {sub_ses} slice for bf_idx {bf_idx} is empty (size 0).")
-        else:
-            # Compute the mean, ignoring NaNs
-            mean_values = np.nanmean(data_slice, axis=0)
-            #print(f"Mean values for {sub_ses}, bf_idx {bf_idx}: {mean_values}")
-            
-            # Store the result
-            bfs_visual_all[ses_idx, :, bf_idx] = mean_values
-
-
-#%% MEAN ACROSS TRIAQLS 
+# MEAN ACROSS TRIALS 
 bfs_vis_gm = np.zeros([60,6]);
 
 for bf_idx in range(6):
@@ -977,17 +853,10 @@ for bf_idx in range(6):
 #%% PLOT PACF FOR AR LAG  SELECTION
 from statsmodels.graphics.tsaplots import plot_pacf
 
-# Specify the names of the networks
 names_df = ['f_PrimaryVisual_V2', 'f_Sensorimotor', 'f_Auditory', 'f_DMN']
-
-# Creating a 2x2 subplot layout for each network's PACF
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 fig.suptitle('Partial Autocorrelation Function (PACF) for Different Networks', fontsize=16)
-
-# Flatten the axes array for easier iteration
 axes = axes.flatten()
-
-# Plot PACF for each network
 for ax, network in zip(axes, names_df):
     plot_pacf(df_lm[network], ax=ax, lags=20)
     ax.set_title(f'PACF for {network}')
@@ -998,6 +867,7 @@ plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust layout to make room for the tit
 plt.show()
 
 #%% FIGURE 4C
+# ---------------------------------------------------------
 results_visual = {}; contrasts_visual = {}; results_params = {}; results_se = {}; results_pvals = {}
 names_df = ['f_PrimaryVisual_V2', 'f_Sensorimotor', 'f_Auditory', 'f_DMN']
 labels = ['Primary Visual', 'Sensorimotor', 'Auditory', 'DMN']
@@ -1015,20 +885,13 @@ for net_idx, net in enumerate(names_df):
     #contrasts_visual[net] = results.t_test(["C(Succes, Treatment)[T.2.0] - C(Succes, Treatment)[T.1.0], VisualShift_z:C(Succes, Treatment)[T.2.0]-VisualShift_z:C(Succes, Treatment)[T.1.0],VisualDisp_z:C(Succes, Treatment)[T.2.0]-VisualDisp_z:C(Succes, Treatment)[T.1.0]"])
     print(results.summary())
 
-# Initialize the plot
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level: Fitted Model of Network Involvement (SMITH20)', font='Futura Hv BT', fontweight="bold", fontsize=12)
 
-# Loop through each dependent variable to plot
 for i, var in enumerate(names_df):
-    # Calculate fitted values and standard errors
     fitted_values = np.dot(bfs_vis_gm, results_params[var])
     se = results_se[var]
-    
-    # Plot the fitted values
     plt.plot(timerange_m, fitted_values, color=colors_4[i], linewidth=1, label=labels[i])
-    
-    # Fill between for standard errors
     plt.fill_between(
         timerange_m,
         np.dot(bfs_vis_gm, results_params[var] - se),
@@ -1037,27 +900,20 @@ for i, var in enumerate(names_df):
         alpha=0.25
     )
 
-# Labels and legend
 plt.xlabel('Time ($s$)', size=11)
 plt.ylabel('Amplitude', size=11)
-plt.legend(loc='upper right')  # Adjust legend location for better visibility
-
-# Optional: Save the figure if needed
-# plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/Rec_Grouplevel_SMITH20.png', dpi=700)
-
-# Show plot
+plt.legend(loc='upper right')  
 plt.show()
 
-#%%
+#%% MC correction 
+# ---------------------------------------------------------
+from statsmodels.stats.multitest import fdrcorrection
+
 allpvals = []
 for reg in results_pvals.values():
     allpvals.extend(reg)
 
-#%% MC correction 
-# existing tools to check our implementation against
-from statsmodels.stats.multitest import fdrcorrection
 mc_pvals = fdrcorrection(allpvals)
-#%%
 regs = ['bf1','bf2','bf3','bf4','bf5','bf6']
 names_mcpvals = []
 for net in names_df:
@@ -1088,7 +944,7 @@ for sub_ses in sessions:
         succes_cut[sub_ses]  = succes_pd[:-Ndel_t[sub_ses]]
     else:
         succes_cut[sub_ses]  =  succes_pd
-#%%
+
 succes_concat = {}
 for pp in participants:
     if re.search('10', pp) or re.search('15', pp):
@@ -1098,7 +954,7 @@ for pp in participants:
         keys = [str(pp)+'_01', str(pp)+'_02', str(pp)+'_03']
         succes_concat[pp] = np.concatenate((succes_cut[keys[0]], succes_cut[keys[1]], succes_cut[keys[2]]))
 
-#%%
+
 fepoch_hit  = {}; fepoch_fail = {}
 favg_trials_hit = {}; favg_trials_fail = {}
 
@@ -1118,8 +974,7 @@ for pp_idx, pp in enumerate(participants):
     favg_trials_fail[pp] = np.mean(fe_fail, axis=1)
     del I_hit, I_fail, fe_hit, fe_fail
 
-#%% 
-# Create dataframes for all pp's averaged over trials
+#%% Create dataframes for all pp's averaged over trials
 hits_allpp = np.zeros([14,20, 60])
 fails_allpp = np.zeros([14,20,60])
 
@@ -1143,21 +998,19 @@ Max_groupz_sort = Max_groupz_pd.sort_values(0, ascending=False)
 I_maxDMN= np.where(abs(grouplevel_zvals[6,:]) == np.max(abs(grouplevel_zvals[6,:])))[0][0]; tmp_DMN = timerange_m[I_maxDMN]
 I_maxAud= np.where(abs(grouplevel_zvals[2,:]) == np.max(abs(grouplevel_zvals[2,:])))[0][0]; tmp_Aud = timerange_m[I_maxAud]
 
-
 # FIGURE 6a Group level statistics for trial-average f SMITH20
 # ---------------------------------------------------------
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level Statistics: Fail > Hit (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
-#plt.step(timerange_m, bc, where='post', label='Visual Stimulus', color='black', linewidth=0.8)
 plt.plot(timerange_m, grouplevel_zvals[6,:], color= colors_4[3], label= "DMN", linewidth=1)
 plt.fill_between(timerange_m, -2.0, 2.0, where = (timerange_m == tmp_DMN), color=colors_4[3], alpha=0.5)
 plt.ylim([-2.0,2.0])
 plt.xlabel('Time ($s$)', size=11)
 plt.ylabel('$Z$-value', size=11)
-plt.legend(frameon=False, fontsize=11, loc='upper right') #loc='upper left',bbox_to_anchor=(1,1), 
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/Hitfail_Grouplevel_SMITH20.png', dpi=700)
+plt.legend(frameon=False, fontsize=11, loc='upper right') 
 
-#%%
+#%% GLSAR MODELS
+# ---------------------------------------------------------
 networks_glsar = ['f_Sensorimotor', 'f_Auditory', 'f_MedialVisual_V1', 'f_DMN', 'f_ECN','f_LateralVisual_V3', 'f_FPleft', 'f_FPright','f_PrimaryVisual_V2']
 results_visual_succes = {}; contrasts_visual_succes = {}; results_params_succes = {}; results_se_succes = {}
 results_tvals_succes = {}; results_pvals_succes = {}
@@ -1177,18 +1030,14 @@ for net_idx, net in enumerate(networks_glsar):
     contrasts_visual_succes[net] = results.t_test(["C(Succes, Treatment)[T.2.0] - C(Succes, Treatment)[T.1.0],VisualHRF_z:C(Succes, Treatment)[T.2.0] - VisualHRF_z:C(Succes, Treatment)[T.1.0], VisualShift_z:C(Succes, Treatment)[T.2.0]-VisualShift_z:C(Succes, Treatment)[T.1.0],VisualDisp_z:C(Succes, Treatment)[T.2.0]-VisualDisp_z:C(Succes, Treatment)[T.1.0], Visual4_z:C(Succes, Treatment)[T.2.0] - Visual4_z:C(Succes, Treatment)[T.1.0], Visual5_z:C(Succes, Treatment)[T.2.0] - Visual5_z:C(Succes, Treatment)[T.1.0], Visual6_z:C(Succes, Treatment)[T.2.0] - Visual6_z:C(Succes, Treatment)[T.1.0] "])
     print(results.summary())
 
-#%%
-allpvals_succes = []
-for reg in results_pvals_succes.values():
-    allpvals_succes.extend(reg)
-
-
 #%% MC correction 
 # existing tools to check our implementation against
 from statsmodels.stats.multitest import fdrcorrection
+allpvals_succes = []
+for reg in results_pvals_succes.values():
+    allpvals_succes.extend(reg)
 mc_pvals_succes = fdrcorrection(allpvals_succes)
 
-#%%
 regs = ['Hit', 'Fail', 'bf1', 'bf1_hit', 'bf1_fail', 'bf2', 'bf2_hit', 'bf2_fail', 'bf3', 'bf3_hit', 'bf3_fail', 'bf4', 'bf4_hit', 'bf4_fail', 'bf5', 'bf5_hit', 'bf5_fail', 'bf6', 'bf6_hit', 'bf6_fail']
 names_mcpvals = []
 for net in networks_glsar:
@@ -1197,7 +1046,7 @@ for net in networks_glsar:
 
 mc_pvals_succes_df = pd.concat((pd.DataFrame(names_mcpvals), pd.DataFrame(mc_pvals_succes[0]), pd.DataFrame(mc_pvals_succes[1])), axis=1)
 
-#%%
+#%% GLSAR MODEL DMN ONLY
 import statsmodels.api as sm
 from patsy import dmatrices
 
@@ -1239,7 +1088,7 @@ formatted_p_values = [f"{pval:.6f}" for pval in p_values]
 print(f"p-values: {formatted_p_values}")
 
 
-#%%
+#%% POST HOC CONTRASTS
 from statsmodels.stats.multitest import multipletests
 
 # Example: Define your contrast labels (should match the order of p-values)
@@ -1306,7 +1155,6 @@ results_se_succes[net][17]+results_se_succes[net][19]])
 #%% FIGURE 6B GROUP-LEVEL FITTED NETWORK INVOLVEMENT HIT/FAIL---------------------------------------------------------
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level: Fitted Model of Network Involvement: Hit vs. Fail (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
-#plt.step(timerange_m, bc, where='post', label='Visual Stimulus', color='black', linewidth=0.8)
 plt.plot(timerange_m, np.dot(bfs_vis_gm,dmn_hit), color='green', linewidth=1, label='Hits')
 plt.fill_between(timerange_m,np.dot(bfs_vis_gm, dmn_hit-dmn_hit_se), y2= np.dot(bfs_vis_gm, dmn_hit + dmn_hit_se), color='green', alpha=0.25)
 plt.plot(timerange_m, np.dot(bfs_vis_gm, dmn_fail), color='red', linewidth=1, label='Fails')
@@ -1350,7 +1198,6 @@ plt.title("Associations TFM Time Series with Confound Regressors", font = 'Futur
 plt.xlabel("Confound")
 plt.ylabel("Fisher-$Z$ Tranformed Pearson correlation ($r$)")
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/SM3_confounds.png', dpi=700)
 
 #%% Section VI
 DR_corr_plot     = pickle.load(open('/project/3013060.04/TK_data/results_S20/DR_corr_SM.pickle',"rb")); 
@@ -1384,7 +1231,6 @@ plt.xlabel("Task Regressor")
 plt.ylabel("Fisher-z Transformed Pearson ($r$)")
 plt.tight_layout()
 plt.ylim([0,0.7])
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/SM_III_tfm_cor_task.png', dpi=700)
 
 #%% SM IX Spatial cors
 sessions_pub = ['01_01', '01_02', '01_03','02_01', '02_02', '02_03', '03_01', '03_02', '03_03', '04_01', '04_02', '04_03', '05_01', '05_02', '05_03', '06_01', '06_02', '06_03', '07_01', '07_02', '07_03', '08_01', '08_02', '09_01', '09_02', '09_03', '10_01', '10_02', '10_03', '11_01', '11_02', '11_03', '12_01', '12_02', '13_01', '13_02', '13_03', '14_01', '14_02', '14_03' ]
@@ -1395,7 +1241,6 @@ M_all = np.zeros([10,40])
 
 for ses_idx, ses in enumerate(sessions):
     M_all[:,ses_idx] = M_rev[ses][nets_idx]
-    #M_all[:,ses_idx] = M_dict[ses][[1,2,5,6,7,8,9,11,12,15],maxcor_idx[ses]]
 
 M_all_pd = pd.DataFrame(M_all, columns=sessions_pub, index= names_S10)
 M_all_cor = M_all_pd.corr()
@@ -1407,7 +1252,6 @@ plt.title("Spatial Correlations Task-Relevant TFMs (SMITH20)",  font = 'Futura H
 plt.xlabel("Task Run")
 plt.ylabel("Task Run")
 plt.tight_layout()
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/SMIX_spatialcors_S20.png', dpi=700)
 
 
 #%%
