@@ -52,9 +52,8 @@ sys.path.append(os.path.abspath(trifle_module_path))
 import trifle_main
 import trifle_stats
 
-#%% STUDY SPECIFIC 
+#%% STUDY SPECIFICS
 # --------------------------------------------------------------
-
 # PARAMETERS
 TR              = .206;
 Nt              = 3000;
@@ -107,15 +106,15 @@ Xfilename           = 'filtered_func_data_denoised_norm2_unitvariance.nii.gz'
 Sfilename           = 'dr_stage2_subject00000.nii.gz'
 maskfile_name       = 'mask.nii.gz'
 
-filenames_X = {}; filenames_S = {}; filenames_mask = {}
-filenames_T = {}; filenames_M = {}; filenames_B = {}
-filenames_task = {} 
+filenames_X         = {}; filenames_S = {}; filenames_mask = {}
+filenames_T         = {}; filenames_M = {}; filenames_B = {}
+filenames_task      = {} 
 
 for sub_ses in sessions:
-    subses_X         = Path(f"sub-{sub_ses}.ica")
-    subses_stage1    = Path(f"DR_sub-{sub_ses}_s20.dr")
-    stage2_dir       = stage1_dir / f"TFM_sub-{sub_ses}_dr_s20_c15.ica"
-    subses_task      = Path(f"{sub_ses}.txt")
+    subses_X        = Path(f"sub-{sub_ses}.ica")
+    subses_stage1   = Path(f"DR_sub-{sub_ses}_s20.dr")
+    stage2_dir      = stage1_dir / f"TFM_sub-{sub_ses}_dr_s20_c15.ica"
+    subses_task     = Path(f"{sub_ses}.txt")
     
     filenames_X[sub_ses]     = fmridata_dir / subses_X / Xfilename
     filenames_S[sub_ses]     = stage1_dir / subses_stage1 / Sfilename
@@ -133,7 +132,6 @@ for ses in sessions:
     task_dict[ses], task_pd_dict[ses] = load_taskdesign(filenames_task[ses], Nt, 'no')
 
 #%% RUN MAIN (DATALOAD AND TRIFLE LAYER 3)
-## CREATE DATAFRAMES 
 # ---------------------------------------------------------
 X_dict  = {};
 S_dict  = {};
@@ -162,6 +160,7 @@ f_dict          = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_di
 #task_pd_dict   = pickle.load(open('/project/3013060.04/TK_data/results_S20/task_pd_dict.pickle',"rb")); 
 
 #%% PLOT TFM SPATIAL MAPS (SM II)
+# ---------------------------------------------------------
 ##  Figure 3: Static M 
 names_S20_new   = ['NWD (1)', 'Sensorimotor*','Auditory*','NWD (2)','NWD (3)','Medial visual*','DMN*','ECN*', 'Cerebellum*','Lateral visual*','NWD (4)', 'FP (Left)*' , 'FP (Right)*', 'NWD (5)', 'NWD (6)', 'Primary visual*','NWD (7)','NWD (8)', 'NWD (9)', 'NWD (10)']
 ses             = '11_03'
@@ -199,7 +198,7 @@ plt.ylabel("Smith 10 Network")
 plt.tight_layout()
 plt.show()
 
-#%% FIND TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
+#%% IDENITFY TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
 # ---------------------------------------------------------
 # PER SESSION:
 Bz_corr_dict      = {}; Bz_pvals_dict     = {}; Bz_fisher_dict = {}; 
@@ -222,12 +221,6 @@ for ses_idx, ses in enumerate(sessions):
     maxcor_idx[ses] = np.int(maxcor_tfm[ses][3:])-1
     maxcor_value[ses] = Bz_fisher_dict[ses].loc['Visual', maxcor_tfm[ses]]
     del ses_idx, ses
-    
-#%% OPEN PREVIOUSLY SAVED DATA: TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
-# ---------------------------------------------------------
-maxcor_tfm     = pickle.load(open('/project/3013060.04/TK_data/results_S20/maxcor_tfm.pickle',"rb")); 
-maxcor_value   = pickle.load(open('/project/3013060.04/TK_data/results_S20/maxcor_value.pickle',"rb")); 
-maxcor_idx     = pickle.load(open('/project/3013060.04/TK_data/results_S20/maxcor_idx.pickle',"rb")); 
 
 #%% SELECT TASK-POSITIVE TFM; SUBTRACT STATIC M AND REVERSE TIME SERIES IF NEEDED*
 # Note, direction is not meaningful (i.e., depending on the direction of M)
@@ -241,8 +234,7 @@ for ses in sessions:
     
     f       = f_dict[ses][:,tfm_num,:]
     N_t      = f.shape[1]
-    M_filename = op.join('/project/3013060.04/TK_data/dr/TFM_sub-'+str(ses)+'_dr_s20_c15.ica/melodic_unmix')
-    M        = np.loadtxt(M_filename)
+    M        = M_dict[ses]
     static_M = M[:,tfm_num]
     
     ## REVERT TIMESERIES IF NEEDED 
@@ -258,13 +250,8 @@ for ses in sessions:
     f_tpm_dict[ses] = f_minM
     M_rev[ses] = static_M
     del tfm_txt, tfm_num, f, N_t, M_filename, M, static_M, maxcor, step1, f_minM
-    
-#%% OPEN PREVIOUSLY SAVED DATA: f_tpm_dict
-# ---------------------------------------------------------
-f_tpm_dict     = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_tpm_dict.pickle',"rb")); 
-M_rev          = pickle.load(open('/project/3013060.04/TK_data/results_S20/M_rev_dict.pickle',"rb")); 
 
-#%% INTO EPOCHS 
+#%% EPOCH 
 # ---------------------------------------------------------
 f_epochs_dict              = {}
 regressors_epochs_dict     = {}
@@ -278,12 +265,6 @@ for sub_ses in sessions:
     
     f_epochs_dict[sub_ses], regressors_epochs_dict[sub_ses], Ndel_dict[sub_ses] = trifle_stats.into_trials(onsets, regressors, TR, Nt_trial, Nt, f_tpm_dict[sub_ses])
 
-#%% OPEN PREVIOUSLY SAVED DATA: 
-# ---------------------------------------------------------
-f_epochs_dict          = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_epochs_dict.pickle',"rb")); 
-regressors_epochs_dict = pickle.load(open('/project/3013060.04/TK_data/results_S20/regressors_epochs_dict.pickle',"rb")); 
-Ndel_t                 = pickle.load(open('/project/3013060.04/TK_data/tvtfm_pub/dataframes/Ndel_t_dict.pickle',"rb")); 
-
 #%%% TRIAL AVERAGE
 # ---------------------------------------------------------------------------------------------------------------
 f_average_dict = {}; f_sem_dict = {}; regs_average_dict = {}
@@ -293,15 +274,8 @@ for sub_ses in sessions:
     f_sem_dict[sub_ses]     = np.std(f_epochs_dict[sub_ses],axis=1)/np.sqrt(f_epochs_dict[sub_ses].shape[1])
     regs_average_dict[sub_ses] = np.mean(regressors_epochs_dict[sub_ses],axis=1) 
 
-#%% OPEN PREVIOUSLY SAVED DATA: 
-# ---------------------------------------------------------
-f_average_dict     = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_average_dict.pickle',"rb")); 
-f_sem_dict         = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_sem_dict.pickle',"rb")); 
-regs_average_dict  = pickle.load(open('/project/3013060.04/TK_data/results_S20/regs_average_dict.pickle',"rb")); 
-
 #%% Figure 3: RANKING PLOTS
 # ---------------------------------------------------------
-
 f_minM_dict             = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_minM_dict_whole.pickle',"rb")); 
 sub_ses                 = '11_03'
 behavior                = np.loadtxt(op.join('/project/3013060.04/TK_data/behavioral/Behavioral_sub_'+str(sub_ses[:2])+'_ses_'+str(sub_ses[3:])+'.txt'), delimiter="\t", skiprows=1)
@@ -309,12 +283,10 @@ onsets                  = behavior[:,0].T
 onset_frame             = np.round((onsets[0]/TR),0) ; print(onset_frame)
 task                    = task_dict[sub_ses]
 
-### Single trial ranks ---------------------------------------------------------
+### SINGLE TRIAL RANKS, i.e., highest ranking network plotted on task regressor
 f_tfm3                  = f_minM_dict[sub_ses]
 f_tfm3_pd               = pd.DataFrame(f_tfm3, index= names_S20)   ## CHOOSE: -M OR NOT 
-
-# SELECT ONLY SMITH 10
-f_tfm3_10              = np.zeros([10,Nt])
+f_tfm3_10              = np.zeros([10,Nt]) #select only smith10
 smith10                = [1,2,5,6,7,8,9,11,12,15] #SM, AU, V1, DMN, ECN, CER, V3, FP left, FP right, Vis 2
 for i in range(10):
     sel = smith10[i]
@@ -323,10 +295,7 @@ for i in range(10):
 f_tfm3_10              = pd.DataFrame(f_tfm3_10)
 f_tfm3_ranks           = f_tfm3_10.rank(axis=0, ascending=True); 
 
-## PLOT THE HIGHEST PROB RANKING NETWORK ON THE TASK REGRESSOR
-network_colors = ["#2A9D8F", '#EFC560', '#C97459', '#3C6A89', '#A3589C', '#67AD80','#C75964', '#AD64B8', '#AD64B8', '#A6381A'] #'#e2472b']
-#SM, AU, MedVis-V1, DMN, ECN, CER, LaterVis-V3, FP left, FP right, PrimVis-Vis 2, (Hipp)
-
+network_colors = ["#2A9D8F", '#EFC560', '#C97459', '#3C6A89', '#A3589C', '#67AD80','#C75964', '#AD64B8', '#AD64B8', '#A6381A'] #'#e2472b'] #SM, AU, MedVis-V1, DMN, ECN, CER, LaterVis-V3, FP left, FP right, PrimVis-Vis 2, (Hipp)
 I_highest_rank = np.zeros(3000)
 for t in range(3000):
     I_highest_rank[t] = np.where(f_tfm3_ranks.iloc[:,t] == np.amax(f_tfm3_ranks.iloc[:,t]))[0]
@@ -338,33 +307,25 @@ for t_idx, t in enumerate(range(21,81)):
     if  np.isfinite(I_highest_rank[t]):
         if I_highest_rank[t] == 3: #DMN
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 0: # SM
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 6: # lateral vis 3
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 9: # primary vis 2
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 2: # medial vis 1
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
         elif I_highest_rank[t] == 1: #auditory
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
         elif I_highest_rank[t] == 7: #frontoparietal
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 8: #frontoparietal right
             plt.scatter(timerange[t_idx],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
 plt.plot(timerange[:60],task[21:81,0], '--k', linewidth=0.5)
 plt.yticks([])
-# SET THE LINES PER NETWORK PLOT 
-N_t = 60
-network_lines = ['  ', 'Frontoparietal','DMN','Auditory', 'Sensorimotor', 'Visual']
 
+N_t = 60 #set lines per network plot
+network_lines = ['  ', 'Frontoparietal','DMN','Auditory', 'Sensorimotor', 'Visual']
 l = [0,1,2,3,4,5];
 y0 = l[1]*np.ones([N_t])
 y1 = l[2]*np.ones([N_t])
@@ -377,25 +338,18 @@ for t_idx, t in enumerate(range(21,81)):
     if  np.isfinite(I_highest_rank[t]):
         if I_highest_rank[t] == 3: #DMN
             plt.scatter(timerange[t_idx],y1[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
         elif I_highest_rank[t] == 0: # SM
             plt.scatter(timerange[t_idx],y3[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
         elif I_highest_rank[t] == 6: # vis 3
              plt.scatter(timerange[t_idx],y4[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
         elif I_highest_rank[t] == 9: # vis 2
              plt.scatter(timerange[t_idx],y4[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
         elif I_highest_rank[t] == 2: # vis 1
              plt.scatter(timerange[t_idx],y4[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
         elif I_highest_rank[t] == 1: #auditory
             plt.scatter(timerange[t_idx],y2[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-            
         elif I_highest_rank[t] == 7: # frontoparietal
              plt.scatter(timerange[t_idx],y0[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
         elif I_highest_rank[t] == 8: #frontoparietal
             plt.scatter(timerange[t_idx],y0[t_idx], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
 
@@ -404,15 +358,13 @@ ax.yaxis.set_ticks(l)
 ax.set_yticklabels(network_lines, fontsize=11)
 plt.ylim([0, 6])
 plt.xlabel('Time ($s$)', fontsize=12)
-#plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/ranks_singletrial.png', dpi=700, bbox_inches = "tight")
 plt.show()
 
-#%% Across trials ranking plot ---------------------------------------------------------
+### TRIAL AVERAGED RANKS 
 names_S20_s10            = ['Sensorimotor','Auditory','Visual 1','DMN','ECN', 'Cerebellum', 'Visual 3', 'FP Attention (Left)' , 'FP Attention (Right)', 'Visual 2']
 regressors_epochs_dict   = pickle.load(open('/project/3013060.04/TK_data/results_S20/regressors_epochs_dict.pickle',"rb"))
 regs_epochs_ss           = regressors_epochs_dict['11_03']
 regs_average_ss          = np.mean(regs_epochs_ss, axis=1)
-
 ses                     = '11_03'
 f_ta_10                 = np.zeros([10,60])
 smith10                 = [1,2,5,6,7,8,9,11,12,15] #SM, AU, V1, DMN, ECN, CER, V3, FP left, FP right, Vis 2
@@ -421,15 +373,11 @@ for i in range(10):
     sel = smith10[i]
     f_ta_10[i,:] = f_average_ss[sel,:]
     del sel;
-    
 f_ta_10    = pd.DataFrame(f_ta_10, index=names_S20_s10)
 f_ta_ranks = f_ta_10.rank(axis=0, ascending=True); 
-
-## PLOT THE HIGHEST PROB RANKING NETWORK ON THE TASK REGRESSOR
 I_highest_rank = np.zeros([f_average_ss.shape[1]])
 for t in range(f_average_ss.shape[1]):
     I_highest_rank[t] = np.where(f_ta_ranks.iloc[:,t] == np.amax(f_ta_ranks.iloc[:,t]))[0]
-
 task = regs_average_ss.T; print(task.shape)
 N_t = 60
 
@@ -440,32 +388,24 @@ plt.title('Trial-Averaged: Highest Ranking Network per Timepoint', font = 'Futur
 for t in range(N_t):
     if I_highest_rank[t] == 3: #DMN
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-    
     elif I_highest_rank[t] == 0: # SM
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 6: # vis 3
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 9: # vis 2
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 2: # vis 1
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
     elif I_highest_rank[t] == 1: #auditory
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
     elif I_highest_rank[t] == 7: #frontoparietal
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 8:
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
 
 plt.plot(timerange_m,task[:,0], '--k', linewidth=0.5)
 plt.yticks([])
-# SET THE LINES PER NETWORK PLOT 
-l = [0,1,2,3,4,5];
+l = [0,1,2,3,4,5]; #lines per network plot
 y0 = l[1]*np.ones([N_t])
 y1 = l[2]*np.ones([N_t])
 y2 = l[3]*np.ones([N_t])
@@ -476,25 +416,18 @@ plt.subplot(2,1,2)
 for t in range(N_t):
     if I_highest_rank[t] == 3: #DMN
         plt.scatter(timerange[t],y1[t], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 0: # SM
         plt.scatter(timerange_m[t],y3[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 6: # vis 3
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 9: # vis 2
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 2: # vis 1
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 1: #auditory
         plt.scatter(timerange_m[t],y2[t], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-            
     elif I_highest_rank[t] == 7: # frontoparietal
         plt.scatter(timerange_m[t],y0[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 8: #frontoparietal
         plt.scatter(timerange_m[t],y0[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
 
@@ -505,7 +438,8 @@ plt.ylim([0, 6])
 plt.xlabel('Time ($s$)', fontsize=12)
 plt.show()
 
-#%% Group ranking plot: most common highest ranking network on sessions averages 
+### GROUP LEVEL RANKS: most common highest ranking network across sessions 
+# ---------------------------------------------------------
 regressors_epochs_dict   = pickle.load(open('/project/3013060.04/TK_data/results_S20/regressors_epochs_dict.pickle',"rb"))
 f_ta_10_all = {}; f_ta_ranks = {}; I_highest_rank_all = {}; I_highest_rank_all = {}; task_all = {}
 
@@ -547,32 +481,24 @@ plt.title('Group-level: Highest Ranking Network per Timepoint', fontweight='bold
 for t in range(N_t):
     if I_highest_rank[t] == 3: #DMN
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-    
     elif I_highest_rank[t] == 0: # SM
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 6: # vis 3
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 9: # vis 2
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 2: # vis 1
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
     elif I_highest_rank[t] == 1: #auditory
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-        
     elif I_highest_rank[t] == 7: #frontoparietal
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 8:
         plt.scatter(timerange_m[t],task[t,0], color= network_colors[I_highest_rank[t].astype(int)], s=15)
 plt.plot(timerange_m,task[:,0], '--k', linewidth=0.5)
 plt.yticks([])
 
-# SET THE LINES PER NETWORK PLOT 
-l = [0,1,2,3,4,5];
+l = [0,1,2,3,4,5]; #Lines per network plot
 y0 = l[1]*np.ones([N_t])
 y1 = l[2]*np.ones([N_t])
 y2 = l[3]*np.ones([N_t])
@@ -581,28 +507,20 @@ y4 = l[5]*np.ones([N_t])
 
 plt.subplot(2,1,2)
 for t in range(N_t):
-#    if  np.isfinite(I_highest_rank[t]):
     if I_highest_rank[t] == 3: #DMN
         plt.scatter(timerange[t],y1[t], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-
     elif I_highest_rank[t] == 0: # SM
         plt.scatter(timerange_m[t],y3[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 6: # vis 3
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 9: # vis 2
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 2: # vis 1
         plt.scatter(timerange_m[t],y4[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 1: #auditory
         plt.scatter(timerange_m[t],y2[t], color= network_colors[I_highest_rank[t].astype(int)], s=15)
-            
     elif I_highest_rank[t] == 7: # frontoparietal
         plt.scatter(timerange_m[t],y0[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
-
     elif I_highest_rank[t] == 8: #frontoparietal
         plt.scatter(timerange_m[t],y0[t], color= network_colors[I_highest_rank[t].astype(int)], s=15) 
 
@@ -613,6 +531,7 @@ plt.ylim([0, 6])
 plt.xlabel('Time ($s$)', fontsize=12)
 
 #%% CORRELATIONS ENTRIES OF F TO THE TASK
+# ---------------------------------------------------------
 f_taskcor_dict = {}; f_taskcor_pvals_dict = {}
 f_taskcorF_dict = {}; 
 
@@ -637,14 +556,7 @@ for ses_idx, ses in enumerate(sessions):
 f_taskcor_mean = pd.DataFrame(np.mean(f_taskcor_pNet, axis=2), index=names_task, columns=names_S20)
 f_taskcor_mean_sort = f_taskcor_mean.sort_values('Visual',axis=1, ascending=False)
 
-#%% OPEN PREVIOUSLY SAVED DATA: 
-# ---------------------------------------------------------
-f_taskcorF_dict      = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_taskcorF_dict.pickle',"rb")); 
-f_taskcor_pNet       = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_taskcor_pNet.pickle',"rb")); 
-f_taskcor_mean       = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_taskcor_mean.pickle',"rb")); 
-f_taskcor_mean_sort  = pickle.load(open('/project/3013060.04/TK_data/results_S20/f_taskcor_mean_sort.pickle',"rb")); 
-
-#%% FIGURE 4a: single-subject trial averaged SMITH20
+#%% FIGURE 4a: SINGLE SUBJECT TRIAL AVERAGED SMITH20
 # --------------------------------------------------------
 sub_ses = '11_03'
 plt.figure(figsize=(7.5, 4.8))
@@ -657,14 +569,13 @@ plt.xlabel('Time ($s$)', fontsize=11)
 plt.ylabel('Amplitude', fontsize=11)
 plt.legend(fontsize=11, frameon=False)
 
-#%% Trial averaged For all pp's
+#%% TRIAL AVERAGED FOR ALL PPS
 # -------------------------------------------------------------------------------------
 fig, ax = plt.subplots(14,3, figsize=(9.2,22),sharex='col', sharey='row')
 pltcount= 1
 fig.add_axes=([0.1, 0.1, 0.6, 0.75])
 for ses_idx, ses in enumerate(sessions):
-    ## PLOT AVERAGE Mt VS. TASK 
-    # --------------------------------------------------    
+    ## PLOT AVERAGE Mt VS. TASK    
     ax          = plt.subplot(14,3,pltcount)
     color_idx   = -1
     
@@ -690,7 +601,7 @@ plt.tight_layout()
 
 #%% GROUP-LEVEL Z-VALUE SMITH20
 # ---------------------------------------------------------
-# Concatenate across sessions 
+# CONCATENATE ACROSS SESSIONS
 import re
 participants = ['03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '15', '16', '17']
 f_concat = {}
@@ -720,7 +631,8 @@ for net_idx, net in enumerate(networks_stats):
     grouplevel_zvals[names_S20[net]] = net_zvals
     del net_zvals
 
-#%% Figure 5b: Group level statistics for trial-averaged f
+#%% Figure 5b: GROUP LEVEL STATISTICS PLOT
+# ---------------------------------------------------------
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level Statistics: Network Involvement (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
 p1 =plt.plot(timerange_m, grouplevel_zvals[names_S20[15]], colors_4[0], linewidth=1)
@@ -738,8 +650,6 @@ plt.legend(['Primary Visual','Sensorimotor', 'Auditory','DMN'], frameon=False, f
 pps             = ['PP3', 'PP4', 'PP5', 'PP6', 'PP7', 'PP8','PP9', 'PP10', 'PP11','PP12', 'PP13', 'PP15','PP16', 'PP17']
 pps_pub         = ['PP1', 'PP2', 'PP3', 'PP4', 'PP5', 'PP6','PP7', 'PP8', 'PP9','PP10', 'PP11', 'PP12','PP13', 'PP14']
 N_pp            = 14
-
-#Create pp_id, tp_id and session var
 pp_id           = []; tp_id = []; ses_id = [];
 start           = 0; ntp_ses = 3000
 for I_pp, pp in enumerate(pps):
@@ -758,7 +668,7 @@ for I_pp, pp in enumerate(pps):
         ses_id.extend(ntp_ses*['ses_3'])
 pp_id = np.array(pp_id); tp_id = np.array(tp_id); ses_id = np.array(ses_id)
 
-#%% Load basis functions as created with Feat 
+# Load basis functions as created with Feat 
 names_subses    = ['03_01', '03_02', '03_03', '04_01', '04_02', '04_03', '05_01', '05_02', '05_03', '06_01', '06_02', '06_03', '07_01', '07_02', '07_03', '08_01', '08_02', '08_03', '09_01', '09_02', '09_03', '10_01', '10_02', '11_01', '11_02', '11_03', '12_01', '12_02', '12_03', '13_01', '13_02', '13_03', '15_01', '15_02', '16_01', '16_02', '16_03', '17_01', '17_02', '17_03']
 sessions        = list(names_subses)
 names_bfs       = ['Visual_HRF', 'Visual_Shift', 'Visual_Disp','Visual_4', 'Visual_5', 'Visual_6']      
@@ -772,7 +682,7 @@ for ses_idx, ses in enumerate(sessions):
     subses_fs[start:start+ntp_ses,:]  = f_tpm_dict[ses].T
     start = start+ntp_ses
 
-#%% Create succes regressor
+# Create succes regressor
 succes_reg = []   
 succes = {}
 for sub_ses in sessions:    
@@ -851,6 +761,7 @@ for bf_idx in range(6):
     bfs_vis_gm[:,bf_idx] = np.nanmean(bfs_visual_all[:,:,bf_idx], axis=0)
 
 #%% PLOT PACF FOR AR LAG  SELECTION
+# ---------------------------------------------------------
 from statsmodels.graphics.tsaplots import plot_pacf
 
 names_df = ['f_PrimaryVisual_V2', 'f_Sensorimotor', 'f_Auditory', 'f_DMN']
@@ -1087,7 +998,6 @@ print(f"t-values: {t_values}")
 formatted_p_values = [f"{pval:.6f}" for pval in p_values]
 print(f"p-values: {formatted_p_values}")
 
-
 #%% POST HOC CONTRASTS
 from statsmodels.stats.multitest import multipletests
 
@@ -1151,8 +1061,8 @@ results_se_succes[net][11]+results_se_succes[net][12],
 results_se_succes[net][14]+results_se_succes[net][16],
 results_se_succes[net][17]+results_se_succes[net][19]])
 
-
-#%% FIGURE 6B GROUP-LEVEL FITTED NETWORK INVOLVEMENT HIT/FAIL---------------------------------------------------------
+#%% FIGURE 6B GROUP-LEVEL FITTED NETWORK INVOLVEMENT HIT/FAIL
+# ---------------------------------------------------------
 plt.figure(figsize=(7.5, 4.8))
 plt.title('Group-level: Fitted Model of Network Involvement: Hit vs. Fail (SMITH20)', font = 'Futura Hv BT', fontweight="bold", fontsize=12)
 plt.plot(timerange_m, np.dot(bfs_vis_gm,dmn_hit), color='green', linewidth=1, label='Hits')
@@ -1166,7 +1076,7 @@ plt.legend()
 plt.savefig('/home/mrstats/tamdklo/figures/P1_trifle/S20/Rec_Grouplevel_SMITH20_hitfail.png', dpi=700)
 
 #%% SUPPLEMENTARY MATERIAL
-
+# ---------------------------------------------------------
 #%% Section IIII
 confounds_path  = '/project/3013060.04/TK_data/results_S20/confounds_dict.pickle'
 maxcors_TFM_visual        = pickle.load(open('/project/3013060.04/TK_data/results_S20/TFM_maxcors_visual.pickle',"rb"))

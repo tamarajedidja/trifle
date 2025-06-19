@@ -170,7 +170,6 @@ f_dict       = pickle.load(open('/project/3013060.04/TK_data/results_S70/f_dict_
 task_dict    = pickle.load(open('/project/3013060.04/TK_data/results_S70/task_dict_S70.pickle',"rb")); 
 task_pd_dict = pickle.load(open('/project/3013060.04/TK_data/results_S70/task_pd_dict_S70.pickle',"rb")); 
 
-
 #%% FIND TFM TIMESERIES MOST STRONGLY RELATED TO THE TASK 
 # ---------------------------------------------------------
 # PER SESSION:
@@ -207,7 +206,7 @@ for ses in sessions:
     
     f       = f_dict[ses][:,tfm_num,:]
     N_t      = f.shape[1]
-    M        = np.loadtxt(filenames_M[ses])
+    M        = M_dict[ses]
     static_M = M[:,tfm_num]
     
     ## REVERT TIMESERIES IF NEEDED 
@@ -239,6 +238,9 @@ for sub_ses in sessions:
     tfm_num                 = maxcor_idx[sub_ses];
     
     f_epochs_dict[sub_ses], regressors_epochs_dict[sub_ses], Ndel_dict[sub_ses] = trifle_stats.into_trials(onsets, regressors, TR, Nt_trial, Nt, f_tpm_dict[sub_ses])
+
+Ndel_t = pickle.load(open('/project/3013060.04/TK_data/tvtfm_pub/dataframes/Ndel_t70_dict.pickle',"rb")); 
+##TODO: fix Ndel_t
 
 #%%% TRIAL AVERAGE
 # ---------------------------------------------------------------------------------------------------------------
