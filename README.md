@@ -31,11 +31,11 @@ This repository contains:
 
 In case you use TRIFLE, please cite the following paper:
 
-> **Citation**\
-> Tamara Jedidja de Kloe, Zahra Fazal, Nils Kohn, David Gordon Norris, Ravi Shankar Menon, Alberto Llera, Christian Friedrich Beckmann\
-> *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*.\
-> **Imaging Neuroscience (2025)**\
-> DOI: [https://doi.org/10.1162/IMAG.a.58](https://doi.org/10.1162/IMAG.a.58)
+   > **Citation**  
+   > de Kloe, T. J., Fazal, Z., Kohn, N., Norris, D. G., Menon, R. S., Llera, A., & Beckmann, C. F. (2025).  
+   > *Time-Resolved Instantaneous Functional Loci Estimation (TRIFLE): Estimating Time-Varying Allocation of Spatially Overlapping Sources in Functional Magnetic Resonance Imaging*.  
+   > *Imaging Neuroscience.*  
+   > DOI: [https://doi.org/10.1162/IMAG.a.58](https://doi.org/10.1162/IMAG.a.58)
 
 ---
 ## 📦 Package Contents
