@@ -3,7 +3,6 @@
 
 **Developed at**  
 Donders Centre for Cognitive Neuroimaging (DCCN),  
-Donders Institute for Brain, Cognition and Behaviour,  
 Radboud University, Nijmegen, The Netherlands
 
 **Author:** TJ de Kloe
