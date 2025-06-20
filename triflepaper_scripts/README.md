@@ -22,8 +22,7 @@ This folder contains the version of the code used in our publication:
 
 ### ▶️ How to Run
 
-No installation of the `trifle` package is required. Simply clone or download the `triflepaper_scripts/` folder and execute the scripts directly.  
-The scripts automatically use the local `trifle_module/` in this folder.
+No installation of the `trifle` package is required. Simply clone or download the `triflepaper_scripts/` folder and execute the scripts directly. The scripts automatically use the local `trifle_module/` in this folder.
 
 ---
 
