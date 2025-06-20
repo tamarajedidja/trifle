@@ -28,7 +28,7 @@ No installation of the `trifle` package is required. Simply clone or download th
 
 ### 📂 Data Availability
 
-The data used in the TRIFLE paper will be stored at the **Donders Repository**:  
+The data used in the TRIFLE paper are stored at the **Donders Repository**:  
 🔗 https://data.donders.ru.nl/
 
 Access is available **upon request**, in accordance with institutional guidelines.
