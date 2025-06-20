@@ -11,3 +11,4 @@ __pycache__/
 
 # Ignore the in-progress module folder
 trifle_module/
+.DS_Store
