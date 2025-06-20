@@ -38,6 +38,7 @@ import os
 import sys
 from pathlib import Path
 import argparse
+import re
 import numpy as np 
 import seaborn as sns
 import scipy.stats as ss
@@ -612,7 +613,6 @@ plt.legend(['Primary Visual','Sensorimotor', 'Auditory','DMN'], frameon=False, f
 
 #%% CREATE DATAFRAME FOR FLOBS GLMS
 # ---------------------------------------------------------
-## PP ID [| SES ID] | TRIAL | Timepoint | BF1 | BF2 | BF3 | BF4 | BF5 | BF6 | f_nw1 .... f_nw20 | 
 pps             = ['PP3', 'PP4', 'PP5', 'PP6', 'PP7', 'PP8','PP9', 'PP10', 'PP11','PP12', 'PP13', 'PP15','PP16', 'PP17']
 pps_pub         = ['PP1', 'PP2', 'PP3', 'PP4', 'PP5', 'PP6','PP7', 'PP8', 'PP9','PP10', 'PP11', 'PP12','PP13', 'PP14']
 N_pp            = 14
