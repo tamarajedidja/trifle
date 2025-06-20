@@ -32,7 +32,3 @@ The data used in the TRIFLE paper are stored at the **Donders Repository**:
 🔗 https://data.donders.ru.nl/
 
 Access is available **upon request**, in accordance with institutional guidelines.
-
-The installable Python package for TRIFLE is available at:  
-🔗 https://github.com/tamarajedidja/trifle  
-_Requires Python 3.6 or later._
